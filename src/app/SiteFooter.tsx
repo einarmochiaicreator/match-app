@@ -9,7 +9,7 @@ export default function SiteFooter() {
           alt="einAR"
           width={448}
           height={128}
-          className="h-12 w-auto opacity-90 sm:h-[72px]"
+          className="h-24 w-auto opacity-90 sm:h-[144px]"
         />
         <span className="whitespace-nowrap text-[9px] tracking-wide text-[var(--ink-soft)] sm:text-xs">
           soluciones de IA y automatizaciones
