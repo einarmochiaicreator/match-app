@@ -150,9 +150,9 @@ export default function AvailabilityGrid({
       className={`overflow-x-auto border border-[var(--line)] bg-[var(--bg-card)] p-3 sm:p-5 ${
         disabled ? "opacity-60" : ""
       }`}
-      onMouseUp={endDrag}
-      onMouseLeave={endDrag}
-      onTouchEnd={endDrag}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onPointerLeave={endDrag}
     >
       <div className="inline-grid select-none grid-cols-[36px_repeat(7,minmax(38px,1fr))] sm:grid-cols-[52px_repeat(7,minmax(64px,1fr))]">
         <div />
@@ -310,20 +310,26 @@ function Row({
             role="button"
             tabIndex={0}
             title={`${count} ${count === 1 ? "marcó" : "marcaron"}`}
-            className={`h-7 cursor-pointer border border-[var(--line-soft)] transition-colors hover:border-[var(--gold)] ${coincide}`}
-            style={cellStyle(iso)}
-            onMouseDown={(e) => {
+            className={`h-8 cursor-pointer border border-[var(--line-soft)] transition-colors hover:border-[var(--gold)] sm:h-7 ${coincide}`}
+            style={{ ...cellStyle(iso), touchAction: "none" }}
+            onPointerDown={(e) => {
               e.preventDefault();
+              // Liberar el pointer capture así pointerenter llega a las celdas vecinas
+              const el = e.currentTarget as HTMLElement;
+              try {
+                if (el.hasPointerCapture(e.pointerId)) {
+                  el.releasePointerCapture(e.pointerId);
+                }
+              } catch {
+                /* noop */
+              }
               startDrag(iso);
             }}
-            onMouseEnter={() => dragOver(iso)}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              startDrag(iso);
-            }}
-            onTouchMove={(e) => {
-              const t = e.touches[0];
-              const el = document.elementFromPoint(t.clientX, t.clientY);
+            onPointerEnter={() => dragOver(iso)}
+            onPointerMove={(e) => {
+              // Para touch: pointerenter no siempre se dispara, usamos elementFromPoint
+              if (e.pointerType !== "touch") return;
+              const el = document.elementFromPoint(e.clientX, e.clientY);
               if (el instanceof HTMLElement && el.dataset.iso) {
                 dragOver(el.dataset.iso);
               }
