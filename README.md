@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# coincidir
 
-## Getting Started
+App web para coordinar reuniones entre zonas horarias **sin votación**: cada participante marca cuándo puede, y la app encuentra automáticamente los mejores horarios donde más gente coincide.
 
-First, run the development server:
+- Sin cuentas: el organizador crea un evento, comparte un link.
+- Cada uno entra, pone su nombre + zona horaria, y marca con click+drag los slots donde **sí puede**.
+- La app muestra los mejores bloques continuos donde todos (o casi todos) pueden, ranked.
+
+## Setup local
+
+### 1) Crear proyecto de Supabase
+
+1. Andá a [supabase.com](https://supabase.com) → New project (gratis, sin tarjeta).
+2. Elegí región, anotá la password del DB (no la necesitás para esta app).
+3. Esperá ~1 min a que termine de provisionar.
+
+### 2) Cargar el esquema
+
+1. Abrí el **SQL Editor** en tu proyecto.
+2. Pegá el contenido de [`supabase/schema.sql`](supabase/schema.sql) y corré.
+
+### 3) Conectar la app
+
+1. En Supabase: **Project Settings → API**. Copiá:
+   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+2. Copiá el archivo de ejemplo:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+3. Pegá los valores en `.env.local`.
+
+### 4) Correr
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrí `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy en Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Subí el repo a GitHub.
+2. En [vercel.com](https://vercel.com) → New Project → elegí el repo.
+3. En **Environment Variables** pegá:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Deploy. Listo, ya tenés URL pública para compartir.
 
-## Learn More
+## Modelo
 
-To learn more about Next.js, take a look at the following resources:
+- Toda la disponibilidad se guarda como timestamps **UTC**. Cada participante ve la grilla traducida a **su** zona horaria.
+- La ventana del evento (rango de fechas + horas del día) se define en la zona del **organizador**: si vos creás un evento "lunes 8-22 hora Argentina", un participante en Madrid verá esa misma franja convertida a su horario local (probablemente cruzando medianoche).
+- El "mejor horario" es un bloque continuo de slots que cubre la duración pedida y suma la mayor cantidad de participantes disponibles.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Next.js 16 (App Router, Turbopack)
+- React 19
+- Supabase (Postgres + auto-generated REST API)
+- Tailwind CSS v4
 
-## Deploy on Vercel
+## Limitaciones conocidas
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- No hay autenticación: cualquiera con el link puede sumarse o sobrescribir su propia disponibilidad. Para grupos privados, no compartas el link públicamente.
+- El refresco entre participantes es por polling cada 8s (no realtime). Si querés realtime, podés activar Postgres Replication en Supabase para las tablas `participants` y `availability` y suscribirte con `supabase.channel(...)`.
+- Las transiciones de DST en la timezone del organizador pueden producir un slot ligeramente desplazado en la frontera exacta del cambio horario.
