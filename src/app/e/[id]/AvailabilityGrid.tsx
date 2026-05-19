@@ -147,19 +147,19 @@ export default function AvailabilityGrid({
 
   return (
     <div
-      className={`overflow-x-auto border border-[var(--line)] bg-[var(--bg-card)] p-3 sm:p-5 ${
+      className={`border border-[var(--line)] bg-[var(--bg-card)] p-2 sm:p-5 ${
         disabled ? "opacity-60" : ""
       }`}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={endDrag}
     >
-      <div className="inline-grid select-none grid-cols-[36px_repeat(7,minmax(38px,1fr))] sm:grid-cols-[52px_repeat(7,minmax(64px,1fr))]">
+      <div className="grid w-full select-none grid-cols-[24px_repeat(7,1fr)] sm:grid-cols-[52px_repeat(7,minmax(64px,1fr))]">
         <div />
         {WEEKDAY_SHORT.map((d) => (
           <div
             key={d}
-            className="pb-3 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ink-faint)]"
+            className="pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-[var(--ink-faint)] sm:pb-3 sm:text-[10px] sm:tracking-[0.2em]"
           >
             {d}
           </div>
@@ -180,7 +180,7 @@ export default function AvailabilityGrid({
 
         {grid.hours.length > 0 && (
           <>
-            <div className="flex h-0 items-start justify-end overflow-visible pr-1.5 text-[9px] leading-none tabular-nums text-[var(--ink-faint)] sm:pr-3 sm:text-[10px]">
+            <div className="flex h-0 items-start justify-end overflow-visible pr-1 text-[9px] leading-none tabular-nums text-[var(--ink-faint)] sm:pr-3 sm:text-[10px]">
               <span className="-translate-y-1/2">
                 {String(
                   (grid.hours[grid.hours.length - 1] + 1) % 24 === 0
@@ -288,7 +288,7 @@ function Row({
   const hh = String(hour).padStart(2, "0");
   return (
     <>
-      <div className="flex items-start justify-end pr-1.5 text-[9px] leading-none tabular-nums text-[var(--ink-faint)] sm:pr-3 sm:text-[10px]">
+      <div className="flex items-start justify-end pr-1 text-[9px] leading-none tabular-nums text-[var(--ink-faint)] sm:pr-3 sm:text-[10px]">
         <span className="-translate-y-1/2">{hh}</span>
       </div>
       {Array.from({ length: 7 }, (_, wd) => {
