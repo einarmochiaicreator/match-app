@@ -94,10 +94,30 @@ export default function AvailabilityGrid({
           breakIndex = next;
         }
       }
-      hours = [...sorted.slice(breakIndex), ...sorted.slice(0, breakIndex)];
+      // Solo rotar si hay un hueco real (ventana que cruza medianoche).
+      // Con el día completo (00..23) el gap es 1 → se muestra 00→23 en orden.
+      if (maxGap > 1) {
+        hours = [...sorted.slice(breakIndex), ...sorted.slice(0, breakIndex)];
+      }
     }
     return { byCell, hours };
   }, [slots, timezone]);
+
+  // Mayor cantidad de personas que coinciden en alguna celda de la grilla.
+  // Las celdas que alcanzan ese máximo reciben el brillo más fuerte.
+  const maxCount = useMemo(() => {
+    let m = 0;
+    for (const slot of slots) {
+      const iso = slot.toISOString();
+      let c = 0;
+      for (const p of participants) {
+        const set = allAvailability[p.id];
+        if (set && set.has(iso)) c++;
+      }
+      if (c > m) m = c;
+    }
+    return m;
+  }, [slots, participants, allAvailability]);
 
   const dragRef = useRef<{
     active: boolean;
@@ -199,7 +219,10 @@ export default function AvailabilityGrid({
   function coincidenceClass(iso: string): string {
     const count = markersFor(iso).length;
     if (count < 2) return "";
+    // Coinciden todos → explosión de brillo.
     if (totalGroup > 0 && count === totalGroup) return "coincide-explosion";
+    // Es la mayor coincidencia disponible (aunque falte gente) → brillo fuerte.
+    if (count === maxCount) return "coincide-medium";
     const total = Math.max(totalGroup, 2);
     const ratio = (count - 1) / (total - 1);
     return ratio < 0.5 ? "coincide-soft" : "coincide-medium";
@@ -260,8 +283,6 @@ export default function AvailabilityGrid({
         )}
       </div>
 
-      <Legend participants={participants} totalGroup={totalGroup} />
-
       {inspect &&
         (() => {
           const { present, missing } = peopleFor(inspect.iso);
@@ -305,73 +326,6 @@ export default function AvailabilityGrid({
             </div>
           );
         })()}
-    </div>
-  );
-}
-
-function Legend({
-  participants,
-  totalGroup,
-}: {
-  participants: ParticipantLite[];
-  totalGroup: number;
-}) {
-  return (
-    <div className="mt-4 space-y-3 border-t border-[var(--line-soft)] pt-3 sm:mt-5 sm:pt-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="text-[9px] uppercase tracking-[0.25em] text-[var(--ink-faint)] sm:text-[10px]">
-          Cada uno
-        </span>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          {participants.map((p, i) => (
-            <span
-              key={p.id}
-              className="inline-flex items-center gap-1.5 text-[10px] text-[var(--ink-soft)] sm:text-xs"
-            >
-              <span
-                className="inline-block h-3 w-3 border border-[var(--line)]"
-                style={{ backgroundColor: participantColor(i) }}
-              />
-              {p.name}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="text-[9px] uppercase tracking-[0.25em] text-[var(--ink-faint)] sm:text-[10px]">
-          Coincidencias
-        </span>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] text-[var(--ink-soft)] sm:text-xs">
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="coincide-soft inline-block h-3 w-3 border border-[var(--line)]"
-              style={{ backgroundColor: "rgba(232, 184, 122, 0.5)" }}
-            />
-            2
-          </span>
-          {totalGroup >= 4 && (
-            <span className="inline-flex items-center gap-1.5">
-              <span
-                className="coincide-medium inline-block h-3 w-3 border border-[var(--line)]"
-                style={{ backgroundColor: "rgba(232, 184, 122, 0.75)" }}
-              />
-              3
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="coincide-explosion inline-block h-3 w-3 border border-[var(--line)]"
-              style={{ backgroundColor: "#e8b87a" }}
-            />
-            Todos
-          </span>
-        </div>
-      </div>
-
-      <p className="text-[10px] text-[var(--ink-faint)] sm:text-xs">
-        Haz clic y arrastra para pintar tus bloques libres.
-      </p>
     </div>
   );
 }

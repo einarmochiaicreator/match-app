@@ -10,8 +10,8 @@ create table if not exists events (
   organizer_timezone text not null,
   -- Lunes de la semana de referencia. Ancla todos los slots a timestamps concretos.
   week_anchor date not null,
-  day_start_hour int not null default 7 check (day_start_hour between 0 and 23),
-  day_end_hour int not null default 23 check (day_end_hour between 1 and 24),
+  day_start_hour int not null default 0 check (day_start_hour between 0 and 23),
+  day_end_hour int not null default 24 check (day_end_hour between 1 and 24),
   created_at timestamptz not null default now(),
   check (day_end_hour > day_start_hour)
 );

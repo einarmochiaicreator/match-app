@@ -47,7 +47,7 @@ export default function CreateEventForm() {
         organizer_name: trimmedName,
         organizer_timezone: timezone,
         week_anchor: currentWeekAnchor(),
-        day_start_hour: 6,
+        day_start_hour: 0,
         day_end_hour: 24,
       });
       if (eventErr) throw eventErr;
