@@ -48,6 +48,7 @@ export default function EventClient({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [modalDismissed, setModalDismissed] = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
@@ -155,12 +156,6 @@ export default function EventClient({ id }: { id: string }) {
 
   const myEmail = meRow?.email ?? "";
 
-  const allHaveEmail =
-    participants.length > 0 &&
-    participants.every((p) => !!p.email && p.email.trim() !== "");
-  const missingEmailNames = participants
-    .filter((p) => !p.email || p.email.trim() === "")
-    .map((p) => p.name);
   const attendeeEmails = participants
     .map((p) => (p.email ? p.email.trim() : ""))
     .filter((e) => e !== "");
@@ -491,12 +486,28 @@ export default function EventClient({ id }: { id: string }) {
         />
       ) : (
         <div className="space-y-6 sm:space-y-8">
+        {confirmedSlot && !modalDismissed && (
+          <ConfirmedMeeting
+            floating
+            onClose={() => setModalDismissed(true)}
+            slot={confirmedSlot}
+            timezone={me.timezone}
+            title={event.title}
+            emails={attendeeEmails}
+            myEmail={myEmail}
+            onEmailChange={updateMyEmail}
+            isAdmin={isAdmin}
+            onUnconfirm={unconfirmMeeting}
+          />
+        )}
         {confirmedSlot ? (
           <ConfirmedMeeting
             slot={confirmedSlot}
             timezone={me.timezone}
             title={event.title}
             emails={attendeeEmails}
+            myEmail={myEmail}
+            onEmailChange={updateMyEmail}
             isAdmin={isAdmin}
             onUnconfirm={unconfirmMeeting}
           />
@@ -511,9 +522,11 @@ export default function EventClient({ id }: { id: string }) {
                   {me.name} · {me.timezone}
                 </p>
                 <h2 className="mt-1 font-display text-xl text-[var(--gold)] sm:text-2xl">
-                  {iAmPublished
-                    ? "Ya publicaste"
-                    : "Pinta tus bloques libres"}
+                  {confirmedSlot
+                    ? "Reunión coordinada"
+                    : iAmPublished
+                      ? "Ya publicaste"
+                      : "Pinta tus bloques libres"}
                 </h2>
               </div>
               <button
@@ -531,76 +544,65 @@ export default function EventClient({ id }: { id: string }) {
               mySlots={mySlots}
               allAvailability={availabilityByParticipant}
               onChange={toggleSlots}
-              disabled={iAmPublished}
+              disabled={iAmPublished || !!confirmedSlot}
             />
 
-            <p className="mt-2 text-[10px] leading-relaxed text-[var(--ink-faint)] sm:hidden">
-              En el celular, deslizá por los bordes (la columna de horas o el
-              margen derecho) para subir y bajar sin pintar.
-            </p>
+            {!confirmedSlot && (
+              <p className="mt-2 text-[10px] leading-relaxed text-[var(--ink-faint)] sm:hidden">
+                En el celular, deslizá por los bordes (la columna de horas o el
+                margen derecho) para subir y bajar sin pintar.
+              </p>
+            )}
 
-            <div className="mt-6 space-y-4 border-t border-[var(--line)] pt-5">
-              <label className="block max-w-sm">
-                <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ink-faint)]">
-                  Tu email (para recibir la invitación)
-                </span>
-                <input
-                  type="email"
-                  key={me.id + myEmail}
-                  defaultValue={myEmail}
-                  onBlur={(e) => updateMyEmail(e.target.value)}
-                  placeholder="tu@email.com"
-                  className="input"
-                />
-              </label>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-              {iAmPublished ? (
-                <>
-                  <p className="text-sm text-[var(--ink)]">
-                    Publicaste{" "}
-                    <strong className="font-semibold text-[var(--gold)]">
-                      {mySlots.size}
-                    </strong>{" "}
-                    bloques. Esperando al resto.
-                  </p>
-                  <button onClick={unpublish} className="btn-ghost">
-                    Editar mis horarios
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-[var(--ink-soft)]">
-                    {mySlots.size === 0
-                      ? "Haz clic y arrastra para pintar bloques."
-                      : `Marcaste ${mySlots.size} bloque${
-                          mySlots.size === 1 ? "" : "s"
-                        }.`}
-                  </p>
-                  <div className="flex items-center gap-3">
-                    {mySlots.size > 0 && (
-                      <button onClick={clearMyMarks} className="btn-ghost">
-                        Cancelar
-                      </button>
-                    )}
-                    <button
-                      onClick={publish}
-                      disabled={publishing || mySlots.size === 0}
-                      className="btn-primary"
-                    >
-                      {publishing ? "Publicando..." : "Publicar"}
+            {!confirmedSlot && (
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-5">
+                {iAmPublished ? (
+                  <>
+                    <p className="text-sm text-[var(--ink)]">
+                      Publicaste{" "}
+                      <strong className="font-semibold text-[var(--gold)]">
+                        {mySlots.size}
+                      </strong>{" "}
+                      bloques. Esperando al resto.
+                    </p>
+                    <button onClick={unpublish} className="btn-ghost">
+                      Editar mis horarios
                     </button>
-                  </div>
-                </>
-              )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-[var(--ink-soft)]">
+                      {mySlots.size === 0
+                        ? "Haz clic y arrastra para pintar bloques."
+                        : `Marcaste ${mySlots.size} bloque${
+                            mySlots.size === 1 ? "" : "s"
+                          }.`}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      {mySlots.size > 0 && (
+                        <button onClick={clearMyMarks} className="btn-ghost">
+                          Cancelar
+                        </button>
+                      )}
+                      <button
+                        onClick={publish}
+                        disabled={publishing || mySlots.size === 0}
+                        className="btn-primary"
+                      >
+                        {publishing ? "Publicando..." : "Publicar"}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            )}
           </section>
 
           <aside className="space-y-8">
             <ParticipantsList
               participants={participants}
               meId={me.id}
-              isAdmin={isAdmin}
+              isAdmin={isAdmin && !confirmedSlot}
               onRemove={removeParticipant}
             />
             {allPublished ? (
@@ -609,8 +611,6 @@ export default function EventClient({ id }: { id: string }) {
                 totalParticipants={publishedParticipants.length}
                 timezone={me.timezone}
                 showConfirm={isAdmin && !confirmedSlot}
-                canConfirm={allHaveEmail}
-                missingEmailNames={missingEmailNames}
                 onConfirm={confirmMeeting}
               />
             ) : (
@@ -813,14 +813,6 @@ function ParticipantsList({
                 )}
               </span>
               <span className="flex shrink-0 items-center gap-2">
-                {(!p.email || p.email.trim() === "") && (
-                  <span
-                    title="Sin email"
-                    className="text-[9px] uppercase tracking-wider text-[var(--red)]/70"
-                  >
-                    sin email
-                  </span>
-                )}
                 <span
                   className={`text-[10px] uppercase tracking-wider ${
                     published ? "text-[var(--gold)]" : "text-[var(--ink-faint)]"

@@ -49,7 +49,7 @@ function downloadICS(
     "METHOD:REQUEST",
     "BEGIN:VEVENT",
     `UID:${uid}`,
-    `DTSTAMP:${toICSDate(new Date(start.getTime()))}`,
+    `DTSTAMP:${toICSDate(start)}`,
     `DTSTART:${toICSDate(start)}`,
     `DTEND:${toICSDate(end)}`,
     `SUMMARY:${title}`,
@@ -71,21 +71,45 @@ function downloadICS(
   URL.revokeObjectURL(url);
 }
 
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 sm:h-7 sm:w-7">
+      <path
+        d="M5 12.5l4.5 4.5L19 7"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+type Props = {
+  slot: Date;
+  timezone: string;
+  title: string;
+  emails: string[];
+  myEmail: string;
+  onEmailChange: (email: string) => void;
+  isAdmin: boolean;
+  onUnconfirm: () => void;
+  floating?: boolean;
+  onClose?: () => void;
+};
+
 export default function ConfirmedMeeting({
   slot,
   timezone,
   title,
   emails,
+  myEmail,
+  onEmailChange,
   isAdmin,
   onUnconfirm,
-}: {
-  slot: Date;
-  timezone: string;
-  title: string;
-  emails: string[];
-  isAdmin: boolean;
-  onUnconfirm: () => void;
-}) {
+  floating = false,
+  onClose,
+}: Props) {
   const fecha = formatInTz(slot, timezone, {
     weekday: "long",
     day: "numeric",
@@ -100,42 +124,70 @@ export default function ConfirmedMeeting({
   const details =
     "Reunión coordinada con Match. Para sumar Google Meet, abrí el evento en Google Calendar y activá la videollamada.";
 
-  return (
-    <div className="banner-coordinada relative overflow-hidden border border-[var(--green)] bg-gradient-to-br from-[var(--bg-soft)] to-[var(--bg-card)] px-5 py-5 sm:px-7 sm:py-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--green)] sm:text-[11px]">
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-              <path
-                d="M5 12.5l4.5 4.5L19 7"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Reunión confirmada
-          </p>
-          <p className="mt-2 font-display text-2xl capitalize leading-tight text-[var(--green-bright)] sm:text-3xl">
-            {fecha}
-          </p>
-          <p className="font-display text-3xl tabular-nums text-[var(--green)] sm:text-4xl">
-            {hora}
-          </p>
-          <p className="mt-1.5 text-xs text-[var(--ink-soft)] sm:text-sm">
-            En tu zona horaria · {timezone}
-          </p>
-        </div>
+  const center = floating ? "text-center" : "text-left";
+
+  const content = (
+    <div
+      className={`banner-coordinada relative overflow-hidden border border-[var(--green)] bg-gradient-to-br from-[var(--bg-soft)] to-[var(--bg-card)] ${
+        floating ? "p-7 sm:p-9" : "px-5 py-5 sm:px-7 sm:py-6"
+      }`}
+    >
+      <div
+        className={`flex flex-col ${floating ? "items-center" : "items-start"}`}
+      >
+        <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--green)] bg-[var(--bg)] text-[var(--green-bright)] sm:h-14 sm:w-14">
+          <CheckIcon />
+        </span>
+        <p
+          className={`${center} text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--green)] sm:text-[11px]`}
+        >
+          La reunión quedó coordinada
+        </p>
+        <p
+          className={`${center} mt-2 font-display text-2xl leading-tight text-[var(--green-bright)] first-letter:uppercase sm:text-3xl`}
+        >
+          {fecha}
+        </p>
+        <p
+          className={`${center} font-display text-3xl tabular-nums text-[var(--green)] sm:text-4xl`}
+        >
+          {hora}
+        </p>
+        <p
+          className={`${center} mt-1.5 text-xs text-[var(--ink-soft)] sm:text-sm`}
+        >
+          En tu zona horaria · {timezone}
+        </p>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
+      <div className={`mt-5 ${floating ? "mx-auto max-w-sm" : "max-w-sm"}`}>
+        <label className="block">
+          <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ink-faint)]">
+            Tu email para sumarte a la reunión
+          </span>
+          <input
+            type="email"
+            key={myEmail}
+            defaultValue={myEmail}
+            onBlur={(e) => onEmailChange(e.target.value)}
+            placeholder="tu@email.com"
+            className="input"
+          />
+        </label>
+      </div>
+
+      <div
+        className={`mt-5 flex flex-wrap items-center gap-3 ${
+          floating ? "justify-center" : ""
+        }`}
+      >
         <a
           href={googleCalendarUrl(slot, calTitle, details, emails)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center bg-[var(--green)] px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-[var(--bg)] transition hover:bg-[var(--green-bright)]"
         >
-          Agregar a Google Calendar
+          Agendar en Google Calendar
         </a>
         <button
           onClick={() => downloadICS(slot, calTitle, details, emails)}
@@ -143,14 +195,46 @@ export default function ConfirmedMeeting({
         >
           Descargar .ics
         </button>
-        {isAdmin && (
-          <button
-            onClick={onUnconfirm}
-            className="text-[10px] uppercase tracking-wider text-[var(--ink-faint)] underline-offset-4 hover:text-[var(--ink-soft)] hover:underline"
-          >
-            Deshacer
-          </button>
-        )}
+      </div>
+
+      <p
+        className={`${center} mt-3 text-[10px] leading-relaxed text-[var(--ink-faint)]`}
+      >
+        Para la videollamada, abrí el evento en Google Calendar y activá Google
+        Meet.
+      </p>
+
+      {floating && (
+        <button
+          onClick={onClose}
+          className="mt-6 w-full border border-[var(--line)] py-2.5 text-xs font-medium uppercase tracking-wider text-[var(--ink-soft)] transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
+        >
+          Listo
+        </button>
+      )}
+
+      {!floating && isAdmin && (
+        <button
+          onClick={onUnconfirm}
+          className="mt-4 text-[10px] uppercase tracking-wider text-[var(--ink-faint)] underline-offset-4 hover:text-[var(--ink-soft)] hover:underline"
+        >
+          Deshacer
+        </button>
+      )}
+    </div>
+  );
+
+  if (!floating) return content;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto">
+        {content}
       </div>
     </div>
   );

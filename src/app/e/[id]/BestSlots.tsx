@@ -12,8 +12,6 @@ type Props = {
   totalParticipants: number;
   timezone: string;
   showConfirm?: boolean;
-  canConfirm?: boolean;
-  missingEmailNames?: string[];
   onConfirm?: (slot: Date) => void;
 };
 
@@ -22,8 +20,6 @@ export default function BestSlots({
   totalParticipants,
   timezone,
   showConfirm = false,
-  canConfirm = false,
-  missingEmailNames = [],
   onConfirm,
 }: Props) {
   if (totalParticipants === 0) {
@@ -78,20 +74,13 @@ export default function BestSlots({
           <div className="mt-4 border-t border-[var(--line)] pt-4">
             <button
               onClick={() => onConfirm?.(best.start)}
-              disabled={!canConfirm}
               className="btn-primary w-full"
             >
-              Dar OK y agendar
+              Dar OK y coordinar
             </button>
-            {!canConfirm && (
-              <p className="mt-2 text-[11px] leading-relaxed text-[var(--ink-faint)]">
-                {missingEmailNames.length > 0
-                  ? `Para agendar, falta el email de: ${missingEmailNames.join(
-                      ", "
-                    )}.`
-                  : "Para agendar, todos deben dejar su email."}
-              </p>
-            )}
+            <p className="mt-2 text-[11px] leading-relaxed text-[var(--ink-faint)]">
+              Al dar el OK, la reunión queda fija y nadie podrá editar más.
+            </p>
           </div>
         )}
       </div>
