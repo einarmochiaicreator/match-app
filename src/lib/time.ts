@@ -211,13 +211,26 @@ export type SlotResult = {
   missing: string[];
 };
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Como las reuniones son semanales recurrentes, la "próxima ocurrencia" de un
+// slot es su instante adelantado de a semanas hasta caer en el futuro. Así
+// ordenamos por lo que viene más pronto desde hoy, no por "lunes primero".
+function nextOccurrence(t: number, now: number): number {
+  let x = t;
+  while (x < now) x += WEEK_MS;
+  return x;
+}
+
 export function findBestSlots(args: {
   slots: Date[];
   participants: { id: string; name: string }[];
   availability: Record<string, Set<string>>;
   topN?: number;
+  now?: number;
 }): SlotResult[] {
   const { slots, participants, availability } = args;
+  const now = args.now ?? Date.now();
   const results: SlotResult[] = [];
 
   for (const slot of slots) {
@@ -241,7 +254,11 @@ export function findBestSlots(args: {
     if (b.attendees.length !== a.attendees.length) {
       return b.attendees.length - a.attendees.length;
     }
-    return a.start.getTime() - b.start.getTime();
+    // A igualdad de asistentes, la ocurrencia más próxima a hoy primero.
+    return (
+      nextOccurrence(a.start.getTime(), now) -
+      nextOccurrence(b.start.getTime(), now)
+    );
   });
 
   return results.slice(0, args.topN ?? 5);
