@@ -222,6 +222,11 @@ function nextOccurrence(t: number, now: number): number {
   return x;
 }
 
+// Próxima ocurrencia (como Date) de un slot semanal recurrente desde ahora.
+export function nextWeeklyOccurrence(date: Date, now?: number): Date {
+  return new Date(nextOccurrence(date.getTime(), now ?? Date.now()));
+}
+
 export function findBestSlots(args: {
   slots: Date[];
   participants: { id: string; name: string }[];

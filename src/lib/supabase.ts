@@ -33,6 +33,9 @@ export type EventRow = {
   day_start_hour: number;
   day_end_hour: number;
   created_at: string;
+  // Reunión confirmada por el admin (instante UTC concreto).
+  confirmed_slot: string | null;
+  confirmed_at: string | null;
 };
 
 export type ParticipantRow = {
@@ -40,6 +43,7 @@ export type ParticipantRow = {
   event_id: string;
   name: string;
   timezone: string;
+  email: string | null;
   published_at: string | null;
   created_at: string;
 };

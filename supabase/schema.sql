@@ -13,6 +13,9 @@ create table if not exists events (
   day_start_hour int not null default 0 check (day_start_hour between 0 and 23),
   day_end_hour int not null default 24 check (day_end_hour between 1 and 24),
   created_at timestamptz not null default now(),
+  -- Reunión confirmada por el admin (instante UTC concreto) + cuándo.
+  confirmed_slot timestamptz,
+  confirmed_at timestamptz,
   check (day_end_hour > day_start_hour)
 );
 
@@ -21,6 +24,7 @@ create table if not exists participants (
   event_id text not null references events(id) on delete cascade,
   name text not null,
   timezone text not null,
+  email text,
   created_at timestamptz not null default now(),
   unique (event_id, name)
 );

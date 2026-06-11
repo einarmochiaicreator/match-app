@@ -13,11 +13,13 @@ import {
   detectTimezone,
   findBestSlots,
   generateSlots,
+  nextWeeklyOccurrence,
   participantColor,
 } from "@/lib/time";
 import AvailabilityGrid from "./AvailabilityGrid";
 import BestSlots from "./BestSlots";
 import StatusBanner, { type BannerStatus } from "./StatusBanner";
+import ConfirmedMeeting from "./ConfirmedMeeting";
 
 type MeState = { id: string; name: string; timezone: string } | null;
 
@@ -150,6 +152,22 @@ export default function EventClient({ id }: { id: string }) {
     event &&
     me.name.trim().toLowerCase() === event.organizer_name.trim().toLowerCase()
   );
+
+  const myEmail = meRow?.email ?? "";
+
+  const allHaveEmail =
+    participants.length > 0 &&
+    participants.every((p) => !!p.email && p.email.trim() !== "");
+  const missingEmailNames = participants
+    .filter((p) => !p.email || p.email.trim() === "")
+    .map((p) => p.name);
+  const attendeeEmails = participants
+    .map((p) => (p.email ? p.email.trim() : ""))
+    .filter((e) => e !== "");
+
+  const confirmedSlot = event?.confirmed_slot
+    ? new Date(event.confirmed_slot)
+    : null;
 
   const bestBlocks = useMemo(() => {
     if (!event || !allPublished) return [];
@@ -356,6 +374,55 @@ export default function EventClient({ id }: { id: string }) {
     saveMe(id, next);
   }
 
+  async function updateMyEmail(email: string) {
+    if (!me) return;
+    const value = email.trim() || null;
+    setParticipants((prev) =>
+      prev.map((p) => (p.id === me.id ? { ...p, email: value } : p))
+    );
+    const { error: e } = await supabase
+      .from("participants")
+      .update({ email: value })
+      .eq("id", me.id);
+    if (e) console.error("No se pudo guardar el email:", e.message);
+  }
+
+  // Admin da el OK: agenda la próxima ocurrencia del horario elegido.
+  async function confirmMeeting(slot: Date) {
+    if (!isAdmin || !event) return;
+    const when = nextWeeklyOccurrence(slot).toISOString();
+    const now = new Date().toISOString();
+    const { error: e } = await supabase
+      .from("events")
+      .update({ confirmed_slot: when, confirmed_at: now })
+      .eq("id", id);
+    if (e) {
+      console.error("No se pudo confirmar la reunión:", e.message);
+      alert(
+        "No se pudo confirmar. ¿Aplicaste la migración de la base de datos?"
+      );
+      return;
+    }
+    setEvent((prev) =>
+      prev ? { ...prev, confirmed_slot: when, confirmed_at: now } : prev
+    );
+  }
+
+  async function unconfirmMeeting() {
+    if (!isAdmin || !event) return;
+    const { error: e } = await supabase
+      .from("events")
+      .update({ confirmed_slot: null, confirmed_at: null })
+      .eq("id", id);
+    if (e) {
+      console.error("No se pudo deshacer la confirmación:", e.message);
+      return;
+    }
+    setEvent((prev) =>
+      prev ? { ...prev, confirmed_slot: null, confirmed_at: null } : prev
+    );
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -424,7 +491,18 @@ export default function EventClient({ id }: { id: string }) {
         />
       ) : (
         <div className="space-y-6 sm:space-y-8">
-        <StatusBanner status={status} timezone={me.timezone} />
+        {confirmedSlot ? (
+          <ConfirmedMeeting
+            slot={confirmedSlot}
+            timezone={me.timezone}
+            title={event.title}
+            emails={attendeeEmails}
+            isAdmin={isAdmin}
+            onUnconfirm={unconfirmMeeting}
+          />
+        ) : (
+          <StatusBanner status={status} timezone={me.timezone} />
+        )}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_300px] lg:gap-10">
           <section>
             <div className="mb-4 flex items-end justify-between gap-3 sm:mb-5">
@@ -461,7 +539,21 @@ export default function EventClient({ id }: { id: string }) {
               margen derecho) para subir y bajar sin pintar.
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-5">
+            <div className="mt-6 space-y-4 border-t border-[var(--line)] pt-5">
+              <label className="block max-w-sm">
+                <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ink-faint)]">
+                  Tu email (para recibir la invitación)
+                </span>
+                <input
+                  type="email"
+                  key={me.id + myEmail}
+                  defaultValue={myEmail}
+                  onBlur={(e) => updateMyEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  className="input"
+                />
+              </label>
+              <div className="flex flex-wrap items-center justify-between gap-3">
               {iAmPublished ? (
                 <>
                   <p className="text-sm text-[var(--ink)]">
@@ -500,6 +592,7 @@ export default function EventClient({ id }: { id: string }) {
                   </div>
                 </>
               )}
+              </div>
             </div>
           </section>
 
@@ -515,6 +608,10 @@ export default function EventClient({ id }: { id: string }) {
                 blocks={bestBlocks.slice(0, 5)}
                 totalParticipants={publishedParticipants.length}
                 timezone={me.timezone}
+                showConfirm={isAdmin && !confirmedSlot}
+                canConfirm={allHaveEmail}
+                missingEmailNames={missingEmailNames}
+                onConfirm={confirmMeeting}
               />
             ) : (
               <div className="border-l-2 border-[var(--gold)] pl-4">
@@ -716,6 +813,14 @@ function ParticipantsList({
                 )}
               </span>
               <span className="flex shrink-0 items-center gap-2">
+                {(!p.email || p.email.trim() === "") && (
+                  <span
+                    title="Sin email"
+                    className="text-[9px] uppercase tracking-wider text-[var(--red)]/70"
+                  >
+                    sin email
+                  </span>
+                )}
                 <span
                   className={`text-[10px] uppercase tracking-wider ${
                     published ? "text-[var(--gold)]" : "text-[var(--ink-faint)]"

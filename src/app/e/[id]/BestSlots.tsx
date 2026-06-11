@@ -11,12 +11,20 @@ type Props = {
   blocks: SlotResult[];
   totalParticipants: number;
   timezone: string;
+  showConfirm?: boolean;
+  canConfirm?: boolean;
+  missingEmailNames?: string[];
+  onConfirm?: (slot: Date) => void;
 };
 
 export default function BestSlots({
   blocks,
   totalParticipants,
   timezone,
+  showConfirm = false,
+  canConfirm = false,
+  missingEmailNames = [],
+  onConfirm,
 }: Props) {
   if (totalParticipants === 0) {
     return (
@@ -64,6 +72,27 @@ export default function BestSlots({
           <p className="mt-3 text-xs text-[var(--ink-soft)]">
             Falta: {best.missing.join(", ")}
           </p>
+        )}
+
+        {showConfirm && (
+          <div className="mt-4 border-t border-[var(--line)] pt-4">
+            <button
+              onClick={() => onConfirm?.(best.start)}
+              disabled={!canConfirm}
+              className="btn-primary w-full"
+            >
+              Dar OK y agendar
+            </button>
+            {!canConfirm && (
+              <p className="mt-2 text-[11px] leading-relaxed text-[var(--ink-faint)]">
+                {missingEmailNames.length > 0
+                  ? `Para agendar, falta el email de: ${missingEmailNames.join(
+                      ", "
+                    )}.`
+                  : "Para agendar, todos deben dejar su email."}
+              </p>
+            )}
+          </div>
         )}
       </div>
 
