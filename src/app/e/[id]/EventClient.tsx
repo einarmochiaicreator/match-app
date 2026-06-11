@@ -144,6 +144,13 @@ export default function EventClient({ id }: { id: string }) {
 
   const iAmPublished = meRow?.published_at != null;
 
+  // El creador del grupo (organizador) puede administrar participantes.
+  const isAdmin = !!(
+    me &&
+    event &&
+    me.name.trim().toLowerCase() === event.organizer_name.trim().toLowerCase()
+  );
+
   const bestBlocks = useMemo(() => {
     if (!event || !allPublished) return [];
     return findBestSlots({
@@ -244,6 +251,32 @@ export default function EventClient({ id }: { id: string }) {
     },
     [me, iAmPublished]
   );
+
+  // "Cancelar": borra todo lo que marqué (sin publicar). Deshace mis bloques.
+  const clearMyMarks = useCallback(async () => {
+    if (!me || iAmPublished) return;
+    setAvailability((prev) => prev.filter((r) => r.participant_id !== me.id));
+    await supabase.from("availability").delete().eq("participant_id", me.id);
+  }, [me, iAmPublished]);
+
+  // Admin: quitar a cualquier participante del grupo (borra su disponibilidad).
+  async function removeParticipant(pid: string, pname: string) {
+    if (!confirm(`¿Quitar a ${pname} del grupo?`)) return;
+    const { error: e } = await supabase
+      .from("participants")
+      .delete()
+      .eq("id", pid);
+    if (e) {
+      setError(e.message);
+      return;
+    }
+    setParticipants((prev) => prev.filter((p) => p.id !== pid));
+    setAvailability((prev) => prev.filter((r) => r.participant_id !== pid));
+    if (me && me.id === pid) {
+      setMe(null);
+      saveMe(id, null);
+    }
+  }
 
   async function joinAs(name: string, timezone: string) {
     setError(null);
@@ -411,6 +444,11 @@ export default function EventClient({ id }: { id: string }) {
               disabled={iAmPublished}
             />
 
+            <p className="mt-2 text-[10px] leading-relaxed text-[var(--ink-faint)] sm:hidden">
+              En el celular, deslizá por los bordes (la columna de horas o el
+              margen derecho) para subir y bajar sin pintar.
+            </p>
+
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-5">
               {iAmPublished ? (
                 <>
@@ -434,20 +472,32 @@ export default function EventClient({ id }: { id: string }) {
                           mySlots.size === 1 ? "" : "s"
                         }.`}
                   </p>
-                  <button
-                    onClick={publish}
-                    disabled={publishing || mySlots.size === 0}
-                    className="btn-primary"
-                  >
-                    {publishing ? "Publicando..." : "Publicar"}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {mySlots.size > 0 && (
+                      <button onClick={clearMyMarks} className="btn-ghost">
+                        Cancelar
+                      </button>
+                    )}
+                    <button
+                      onClick={publish}
+                      disabled={publishing || mySlots.size === 0}
+                      className="btn-primary"
+                    >
+                      {publishing ? "Publicando..." : "Publicar"}
+                    </button>
+                  </div>
                 </>
               )}
             </div>
           </section>
 
           <aside className="space-y-8">
-            <ParticipantsList participants={participants} meId={me.id} />
+            <ParticipantsList
+              participants={participants}
+              meId={me.id}
+              isAdmin={isAdmin}
+              onRemove={removeParticipant}
+            />
             {allPublished ? (
               <BestSlots
                 blocks={bestBlocks.slice(0, 5)}
@@ -553,42 +603,77 @@ function JoinForm({
 function ParticipantsList({
   participants,
   meId,
+  isAdmin,
+  onRemove,
 }: {
   participants: ParticipantRow[];
   meId: string;
+  isAdmin: boolean;
+  onRemove: (id: string, name: string) => void;
 }) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--ink-faint)]">
-        Participantes
-      </p>
+      <div className="flex items-baseline justify-between">
+        <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--ink-faint)]">
+          Participantes
+        </p>
+        {isAdmin && (
+          <p className="text-[9px] uppercase tracking-[0.2em] text-[var(--ink-faint)]">
+            Admin
+          </p>
+        )}
+      </div>
       <ul className="mt-3 divide-y divide-[var(--line-soft)] border-t border-[var(--line-soft)]">
         {participants.map((p, i) => {
           const published = p.published_at != null;
           return (
             <li
               key={p.id}
-              className="flex items-center justify-between py-2.5 text-sm"
+              className="flex items-center justify-between gap-2 py-2.5 text-sm"
             >
-              <span className="inline-flex items-center gap-2 text-[var(--ink)]">
+              <span className="inline-flex min-w-0 items-center gap-2 text-[var(--ink)]">
                 <span
-                  className="inline-block h-3 w-3 border border-[var(--line)]"
+                  className="inline-block h-3 w-3 shrink-0 border border-[var(--line)]"
                   style={{ backgroundColor: participantColor(i) }}
                   aria-hidden="true"
                 />
-                {p.name}
+                <span className="truncate">{p.name}</span>
                 {p.id === meId && (
-                  <span className="ml-1 text-[10px] uppercase tracking-wider text-[var(--ink-faint)]">
+                  <span className="shrink-0 text-[10px] uppercase tracking-wider text-[var(--ink-faint)]">
                     (tú)
                   </span>
                 )}
               </span>
-              <span
-                className={`text-[10px] uppercase tracking-wider ${
-                  published ? "text-[var(--gold)]" : "text-[var(--ink-faint)]"
-                }`}
-              >
-                {published ? "Publicó" : "Pendiente"}
+              <span className="flex shrink-0 items-center gap-2">
+                <span
+                  className={`text-[10px] uppercase tracking-wider ${
+                    published ? "text-[var(--gold)]" : "text-[var(--ink-faint)]"
+                  }`}
+                >
+                  {published ? "Publicó" : "Pendiente"}
+                </span>
+                {isAdmin && p.id !== meId && (
+                  <button
+                    onClick={() => onRemove(p.id, p.name)}
+                    aria-label={`Quitar a ${p.name}`}
+                    title={`Quitar a ${p.name}`}
+                    className="flex h-5 w-5 items-center justify-center text-[var(--ink-faint)] transition hover:text-[var(--red)]"
+                  >
+                    <svg
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      className="h-3.5 w-3.5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 4l8 8M12 4l-8 8"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                )}
               </span>
             </li>
           );

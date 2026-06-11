@@ -82,13 +82,13 @@ export default function StatusBanner({
       minute: "2-digit",
     });
     return (
-      <div className="banner-coordinada relative overflow-hidden border border-[var(--gold)] bg-gradient-to-br from-[var(--bg-soft)] to-[var(--bg-card)] px-5 py-5 sm:px-7 sm:py-6">
+      <div className="banner-coordinada relative overflow-hidden border border-[var(--green)] bg-gradient-to-br from-[var(--bg-soft)] to-[var(--bg-card)] px-5 py-5 sm:px-7 sm:py-6">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--gold)] sm:text-[11px]">
+            <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--green)] sm:text-[11px]">
               Reunión coordinada
             </p>
-            <p className="mt-2 font-display text-2xl leading-tight text-[var(--gold-bright)] sm:text-4xl">
+            <p className="mt-2 font-display text-2xl leading-tight text-[var(--green-bright)] sm:text-4xl">
               {day}{" "}
               <span className="tabular-nums">{time}</span>
             </p>
@@ -96,7 +96,7 @@ export default function StatusBanner({
               Coinciden las {status.total} personas · {timezone}
             </p>
           </div>
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-[var(--gold)] bg-[var(--bg)] text-[var(--gold-bright)] sm:h-14 sm:w-14">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-[var(--green)] bg-[var(--bg)] text-[var(--green-bright)] sm:h-14 sm:w-14">
             <CheckIcon />
           </span>
         </div>
@@ -107,20 +107,20 @@ export default function StatusBanner({
   // Todos publicaron, pero no coincide el grupo completo
   if (status.kind === "partial") {
     return (
-      <div className="border border-[var(--line)] border-l-2 border-l-[var(--gold)] bg-[var(--bg-card)] px-5 py-4 sm:px-6 sm:py-5">
-        <p className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--gold)] sm:text-[11px]">
+      <div className="border border-[var(--red)] bg-[var(--bg-card)] px-5 py-4 shadow-[0_0_24px_-12px_rgba(239,111,94,0.6)] sm:px-6 sm:py-5">
+        <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--red)] sm:text-[11px]">
           <AlertIcon /> Sin coincidencia total
         </p>
-        <p className="mt-2 text-sm text-[var(--ink)] sm:text-base">
+        <p className="mt-2 text-sm text-[var(--red-bright)] sm:text-base">
           Todos publicaron, pero todavía no hay un horario donde coincidan las{" "}
           {status.total} personas. Lo más cerca:{" "}
-          <span className="text-[var(--gold)]">
+          <span className="font-semibold text-[var(--red)]">
             {status.block.attendees.length} de {status.total}
           </span>
           .
         </p>
 
-        <p className="mt-3 text-[10px] uppercase tracking-[0.25em] text-[var(--ink-faint)]">
+        <p className="mt-3 text-[10px] uppercase tracking-[0.25em] text-[var(--red)]/70">
           Donde más coinciden — falta que se sumen
         </p>
         <ul className="mt-2 space-y-1.5">
@@ -135,17 +135,17 @@ export default function StatusBanner({
                 key={i}
                 className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm"
               >
-                <span className="font-display text-[var(--gold)]">
+                <span className="font-display text-[var(--red-bright)]">
                   {day} {time}
                 </span>
-                <span className="text-xs text-[var(--ink-soft)]">
+                <span className="text-xs text-[var(--red)]/80">
                   falta {s.missing.join(", ")}
                 </span>
               </li>
             );
           })}
         </ul>
-        <p className="mt-2.5 text-xs text-[var(--ink-faint)]">
+        <p className="mt-2.5 text-xs text-[var(--ink-soft)]">
           Si esas personas pintan ese horario, la reunión queda coordinada.
         </p>
       </div>
@@ -155,15 +155,15 @@ export default function StatusBanner({
   // Todos publicaron, pero los bloques no se cruzan en ningún horario
   if (status.kind === "none") {
     return (
-      <div className="border border-[var(--line)] border-l-2 border-l-[var(--brown-warm)] bg-[var(--bg-card)] px-5 py-4 sm:px-6 sm:py-5">
-        <p className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--ink-soft)] sm:text-[11px]">
+      <div className="border border-[var(--red)] bg-[var(--bg-card)] px-5 py-4 shadow-[0_0_24px_-12px_rgba(239,111,94,0.6)] sm:px-6 sm:py-5">
+        <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--red)] sm:text-[11px]">
           <AlertIcon /> Sin horarios en común
         </p>
-        <p className="mt-2 text-sm text-[var(--ink)] sm:text-base">
+        <p className="mt-2 text-sm text-[var(--red-bright)] sm:text-base">
           Todos publicaron, pero sus bloques libres no se cruzan en ningún
           horario.
         </p>
-        <p className="mt-1.5 text-xs text-[var(--ink-faint)]">
+        <p className="mt-1.5 text-xs text-[var(--ink-soft)]">
           Pueden volver a editar sus bloques para encontrar uno que les sirva a
           todos.
         </p>

@@ -240,8 +240,8 @@ export default function AvailabilityGrid({
         setInspect(null);
       }}
     >
-      <div className="grid w-full select-none grid-cols-[24px_repeat(7,1fr)] sm:grid-cols-[52px_repeat(7,minmax(64px,1fr))]">
-        <div />
+      <div className="grid w-full select-none grid-cols-[26px_repeat(7,1fr)_16px] sm:grid-cols-[52px_repeat(7,minmax(64px,1fr))_22px]">
+        <div style={{ touchAction: "pan-y" }} />
         {WEEKDAY_SHORT.map((d) => (
           <div
             key={d}
@@ -250,6 +250,7 @@ export default function AvailabilityGrid({
             {d}
           </div>
         ))}
+        <div style={{ touchAction: "pan-y" }} />
 
         {grid.hours.map((h) => (
           <Row
@@ -279,6 +280,7 @@ export default function AvailabilityGrid({
             {Array.from({ length: 7 }, (_, i) => (
               <div key={`end-${i}`} className="h-0" />
             ))}
+            <div className="h-0" />
           </>
         )}
       </div>
@@ -352,7 +354,10 @@ function Row({
   const hh = String(hour).padStart(2, "0");
   return (
     <>
-      <div className="flex items-start justify-end pr-1 text-[10px] font-medium leading-none tabular-nums text-[var(--ink-soft)] sm:pr-3 sm:text-[11px]">
+      <div
+        className="flex items-start justify-end pr-1 text-[10px] font-medium leading-none tabular-nums text-[var(--ink-soft)] sm:pr-3 sm:text-[11px]"
+        style={{ touchAction: "pan-y" }}
+      >
         <span className="-translate-y-1/2">{hh}</span>
       </div>
       {Array.from({ length: 7 }, (_, wd) => {
@@ -410,6 +415,8 @@ function Row({
           </div>
         );
       })}
+      {/* Margen derecho: zona para hacer scroll vertical sin pintar */}
+      <div style={{ touchAction: "pan-y" }} />
     </>
   );
 }
