@@ -92,7 +92,7 @@ export default function StatusBanner({
               {day}{" "}
               <span className="tabular-nums">{time}</span>
             </p>
-            <p className="mt-1.5 text-xs text-[var(--ink-soft)] sm:text-sm">
+            <p className="mt-1.5 text-xs font-medium text-[var(--green)] sm:text-sm">
               Coinciden las {status.total} personas · {timezone}
             </p>
           </div>
@@ -111,10 +111,10 @@ export default function StatusBanner({
         <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--red)] sm:text-[11px]">
           <AlertIcon /> Sin coincidencia total
         </p>
-        <p className="mt-2 text-sm text-[var(--red-bright)] sm:text-base">
+        <p className="mt-2 text-sm font-medium text-[var(--red)] sm:text-base">
           Todos publicaron, pero todavía no hay un horario donde coincidan las{" "}
           {status.total} personas. Lo más cerca:{" "}
-          <span className="font-semibold text-[var(--red)]">
+          <span className="font-bold text-[var(--red-bright)]">
             {status.block.attendees.length} de {status.total}
           </span>
           .
@@ -159,7 +159,7 @@ export default function StatusBanner({
         <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--red)] sm:text-[11px]">
           <AlertIcon /> Sin horarios en común
         </p>
-        <p className="mt-2 text-sm text-[var(--red-bright)] sm:text-base">
+        <p className="mt-2 text-sm font-medium text-[var(--red)] sm:text-base">
           Todos publicaron, pero sus bloques libres no se cruzan en ningún
           horario.
         </p>

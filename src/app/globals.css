@@ -14,10 +14,10 @@
   --gold-glow: rgba(245, 213, 154, 0.5);
   --brown-warm: #8b5a32;
   --brown-deep: #4a2c1c;
-  --red: #ef6f5e;
-  --red-bright: #f59a8d;
-  --green: #5fd49a;
-  --green-bright: #9bebc2;
+  --red: #f0584a;
+  --red-bright: #ff9080;
+  --green: #4fd397;
+  --green-bright: #8fe9bd;
 }
 
 @theme inline {
