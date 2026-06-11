@@ -349,6 +349,13 @@ export default function EventClient({ id }: { id: string }) {
     saveMe(id, null);
   }
 
+  // Retomar la identidad de un participante que ya existe (sin duplicar).
+  function resumeAs(p: ParticipantRow) {
+    const next = { id: p.id, name: p.name, timezone: p.timezone };
+    setMe(next);
+    saveMe(id, next);
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -409,7 +416,12 @@ export default function EventClient({ id }: { id: string }) {
       </header>
 
       {!me ? (
-        <JoinForm onJoin={joinAs} error={error} />
+        <JoinForm
+          onJoin={joinAs}
+          onResume={resumeAs}
+          participants={participants}
+          error={error}
+        />
       ) : (
         <div className="space-y-6 sm:space-y-8">
         <StatusBanner status={status} timezone={me.timezone} />
@@ -528,9 +540,13 @@ export default function EventClient({ id }: { id: string }) {
 
 function JoinForm({
   onJoin,
+  onResume,
+  participants,
   error,
 }: {
   onJoin: (name: string, tz: string) => void;
+  onResume: (p: ParticipantRow) => void;
+  participants: ParticipantRow[];
   error: string | null;
 }) {
   const [name, setName] = useState("");
@@ -542,19 +558,73 @@ function JoinForm({
     setTz(detectTimezone());
   }, []);
 
+  const hasRoster = participants.length > 0;
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onJoin(name, tz);
-      }}
-      className="mx-auto max-w-md border border-[var(--line)] bg-[var(--bg-card)] p-8"
-    >
-      <h2 className="font-display text-2xl text-[var(--gold)]">Únete al grupo</h2>
-      <p className="mt-1 text-sm text-[var(--ink-soft)]">
-        Tu nombre y tu zona horaria, nada más.
-      </p>
-      <div className="mt-7 space-y-6">
+    <div className="mx-auto max-w-md border border-[var(--line)] bg-[var(--bg-card)] p-8">
+      {hasRoster && (
+        <div className="mb-7">
+          <h2 className="font-display text-2xl text-[var(--gold)]">
+            ¿Quién eres?
+          </h2>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">
+            Si ya pintaste tus horarios, retoma con tu nombre. No empieces de
+            cero.
+          </p>
+          <ul className="mt-5 space-y-2">
+            {participants.map((p, i) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => onResume(p)}
+                  className="flex w-full items-center justify-between gap-3 border border-[var(--line)] bg-[var(--bg-soft)] px-4 py-3 text-left transition hover:border-[var(--gold)]"
+                >
+                  <span className="inline-flex min-w-0 items-center gap-2 text-[var(--ink)]">
+                    <span
+                      className="inline-block h-3 w-3 shrink-0 border border-[var(--line)]"
+                      style={{ backgroundColor: participantColor(i) }}
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">{p.name}</span>
+                  </span>
+                  <span
+                    className={`shrink-0 text-[10px] uppercase tracking-wider ${
+                      p.published_at
+                        ? "text-[var(--gold)]"
+                        : "text-[var(--ink-faint)]"
+                    }`}
+                  >
+                    {p.published_at ? "Publicó →" : "Pendiente →"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-[var(--ink-faint)]">
+            <span className="h-px flex-1 bg-[var(--line-soft)]" />
+            o alguien nuevo
+            <span className="h-px flex-1 bg-[var(--line-soft)]" />
+          </div>
+        </div>
+      )}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onJoin(name, tz);
+        }}
+      >
+        {!hasRoster && (
+          <>
+            <h2 className="font-display text-2xl text-[var(--gold)]">
+              Únete al grupo
+            </h2>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">
+              Tu nombre y tu zona horaria, nada más.
+            </p>
+          </>
+        )}
+        <div className={hasRoster ? "space-y-6" : "mt-7 space-y-6"}>
         <label className="block">
           <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ink-faint)]">
             Tu nombre
@@ -565,7 +635,7 @@ function JoinForm({
             onChange={(e) => setName(e.target.value)}
             className="input"
             required
-            autoFocus
+            autoFocus={!hasRoster}
           />
         </label>
         <label className="block">
@@ -593,10 +663,11 @@ function JoinForm({
           </div>
         )}
         <button type="submit" className="btn-primary w-full">
-          Entrar →
+          {hasRoster ? "Entrar como nuevo →" : "Entrar →"}
         </button>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }
 
