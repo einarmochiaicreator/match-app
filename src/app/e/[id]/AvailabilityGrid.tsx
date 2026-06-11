@@ -106,8 +106,33 @@ export default function AvailabilityGrid({
   }>({ active: false, mode: "add", touched: new Set() });
   const [, force] = useState(0);
 
+  // Celda sobre la que el cursor/dedo está posado, para mostrar quién marcó.
+  const [inspect, setInspect] = useState<{
+    iso: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  function showInspect(iso: string, x: number, y: number) {
+    if (dragRef.current.active) return; // no estorbar mientras se pinta
+    setInspect({ iso, x, y });
+  }
+
+  // Quiénes marcaron ese slot y quiénes faltan (con sus índices de color).
+  function peopleFor(iso: string) {
+    const present: { p: ParticipantLite; i: number }[] = [];
+    const missing: ParticipantLite[] = [];
+    for (let i = 0; i < participants.length; i++) {
+      const set = allAvailability[participants[i].id];
+      if (set && set.has(iso)) present.push({ p: participants[i], i });
+      else missing.push(participants[i]);
+    }
+    return { present, missing };
+  }
+
   function startDrag(iso: string) {
     if (disabled) return;
+    setInspect(null);
     const willAdd = !mySlots.has(iso);
     dragRef.current = {
       active: true,
@@ -187,7 +212,10 @@ export default function AvailabilityGrid({
       }`}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      onPointerLeave={endDrag}
+      onPointerLeave={() => {
+        endDrag();
+        setInspect(null);
+      }}
     >
       <div className="grid w-full select-none grid-cols-[24px_repeat(7,1fr)] sm:grid-cols-[52px_repeat(7,minmax(64px,1fr))]">
         <div />
@@ -210,6 +238,7 @@ export default function AvailabilityGrid({
             coincidenceClass={coincidenceClass}
             startDrag={startDrag}
             dragOver={dragOver}
+            showInspect={showInspect}
           />
         ))}
 
@@ -232,6 +261,50 @@ export default function AvailabilityGrid({
       </div>
 
       <Legend participants={participants} totalGroup={totalGroup} />
+
+      {inspect &&
+        (() => {
+          const { present, missing } = peopleFor(inspect.iso);
+          if (present.length === 0) return null;
+          const d = new Date(inspect.iso);
+          const label = `${WEEKDAY_SHORT[weekdayIndex(d, timezone)]} ${String(
+            localHour(d, timezone)
+          ).padStart(2, "0")}:00`;
+          return (
+            <div
+              className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full"
+              style={{ left: inspect.x, top: inspect.y - 12 }}
+            >
+              <div className="min-w-[140px] max-w-[220px] border border-[var(--line)] bg-[var(--bg-card)] px-3 py-2 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.8)]">
+                <p className="font-display text-xs text-[var(--gold)]">
+                  {label}
+                  <span className="ml-1.5 font-sans text-[10px] font-normal tracking-wider text-[var(--ink-faint)]">
+                    {present.length}/{totalGroup}
+                  </span>
+                </p>
+                <ul className="mt-1.5 space-y-1">
+                  {present.map(({ p, i }) => (
+                    <li
+                      key={p.id}
+                      className="flex items-center gap-1.5 text-[11px] text-[var(--ink)]"
+                    >
+                      <span
+                        className="inline-block h-2.5 w-2.5 shrink-0 border border-[var(--line)]"
+                        style={{ backgroundColor: participantColor(i) }}
+                      />
+                      {p.name}
+                    </li>
+                  ))}
+                </ul>
+                {missing.length > 0 && (
+                  <p className="mt-1.5 border-t border-[var(--line-soft)] pt-1.5 text-[10px] text-[var(--ink-faint)]">
+                    Falta: {missing.map((m) => m.name).join(", ")}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 }
@@ -311,6 +384,7 @@ function Row({
   coincidenceClass,
   startDrag,
   dragOver,
+  showInspect,
 }: {
   hour: number;
   byCell: Map<string, Date>;
@@ -319,6 +393,7 @@ function Row({
   coincidenceClass: (iso: string) => string;
   startDrag: (iso: string) => void;
   dragOver: (iso: string) => void;
+  showInspect: (iso: string, x: number, y: number) => void;
 }) {
   const hh = String(hour).padStart(2, "0");
   return (
@@ -344,7 +419,6 @@ function Row({
             key={iso}
             role="button"
             tabIndex={0}
-            title={`${count} ${count === 1 ? "marcó" : "marcaron"}`}
             className={`flex h-8 cursor-pointer items-center justify-center border border-[var(--line-soft)] transition-colors hover:border-[var(--gold)] sm:h-7 ${coincide}`}
             style={{ ...cellStyle(iso), touchAction: "none" }}
             onPointerDown={(e) => {
@@ -360,10 +434,17 @@ function Row({
               }
               startDrag(iso);
             }}
-            onPointerEnter={() => dragOver(iso)}
+            onPointerEnter={(e) => {
+              dragOver(iso);
+              showInspect(iso, e.clientX, e.clientY);
+            }}
             onPointerMove={(e) => {
-              // Para touch: pointerenter no siempre se dispara, usamos elementFromPoint
-              if (e.pointerType !== "touch") return;
+              if (e.pointerType !== "touch") {
+                // Mouse: el tooltip sigue al cursor
+                showInspect(iso, e.clientX, e.clientY);
+                return;
+              }
+              // Touch: pointerenter no siempre se dispara, usamos elementFromPoint
               const el = document.elementFromPoint(e.clientX, e.clientY);
               if (el instanceof HTMLElement && el.dataset.iso) {
                 dragOver(el.dataset.iso);

@@ -153,7 +153,7 @@ export default function EventClient({ id }: { id: string }) {
         name: p.name,
       })),
       availability: availabilityByParticipant,
-      topN: 5,
+      topN: 8,
     });
   }, [
     event,
@@ -185,7 +185,12 @@ export default function EventClient({ id }: { id: string }) {
     if (best.attendees.length === total) {
       return { kind: "matched", block: best, total };
     }
-    return { kind: "partial", block: best, total };
+    // Horarios donde más gente coincide (mismo máximo de asistentes), para
+    // nombrar a quienes faltan sumarse.
+    const topSlots = bestBlocks
+      .filter((b) => b.attendees.length === best.attendees.length)
+      .slice(0, 3);
+    return { kind: "partial", block: best, total, topSlots };
   }, [
     allPublished,
     pendingNames,
@@ -445,7 +450,7 @@ export default function EventClient({ id }: { id: string }) {
             <ParticipantsList participants={participants} meId={me.id} />
             {allPublished ? (
               <BestSlots
-                blocks={bestBlocks}
+                blocks={bestBlocks.slice(0, 5)}
                 totalParticipants={publishedParticipants.length}
                 timezone={me.timezone}
               />

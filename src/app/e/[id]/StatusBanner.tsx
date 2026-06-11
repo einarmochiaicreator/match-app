@@ -10,7 +10,12 @@ import {
 export type BannerStatus =
   | { kind: "waiting"; pending: string[]; published: number; total: number }
   | { kind: "matched"; block: SlotResult; total: number }
-  | { kind: "partial"; block: SlotResult; total: number }
+  | {
+      kind: "partial";
+      block: SlotResult;
+      total: number;
+      topSlots: SlotResult[];
+    }
   | { kind: "none"; total: number };
 
 function CheckIcon() {
@@ -101,33 +106,48 @@ export default function StatusBanner({
 
   // Todos publicaron, pero no coincide el grupo completo
   if (status.kind === "partial") {
-    const day = WEEKDAY_LABELS[weekdayIndex(status.block.start, timezone)];
-    const time = formatInTz(status.block.start, timezone, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
     return (
       <div className="border border-[var(--line)] border-l-2 border-l-[var(--gold)] bg-[var(--bg-card)] px-5 py-4 sm:px-6 sm:py-5">
         <p className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--gold)] sm:text-[11px]">
           <AlertIcon /> Sin coincidencia total
         </p>
         <p className="mt-2 text-sm text-[var(--ink)] sm:text-base">
-          Todos publicaron, pero no hay ningún horario donde coincidan las{" "}
-          {status.total} personas.
+          Todos publicaron, pero todavía no hay un horario donde coincidan las{" "}
+          {status.total} personas. Lo más cerca:{" "}
+          <span className="text-[var(--gold)]">
+            {status.block.attendees.length} de {status.total}
+          </span>
+          .
         </p>
-        <p className="mt-2.5 text-sm text-[var(--ink-soft)]">
-          Mejor opción:{" "}
-          <span className="font-display text-[var(--gold)]">
-            {day} {time}
-          </span>{" "}
-          — {status.block.attendees.length} de {status.total}.
+
+        <p className="mt-3 text-[10px] uppercase tracking-[0.25em] text-[var(--ink-faint)]">
+          Donde más coinciden — falta que se sumen
         </p>
-        {status.block.missing.length > 0 && (
-          <p className="mt-1 text-xs text-[var(--ink-faint)]">
-            No puede: {status.block.missing.join(", ")}. Pueden editar sus
-            bloques para encontrar uno en común.
-          </p>
-        )}
+        <ul className="mt-2 space-y-1.5">
+          {status.topSlots.map((s, i) => {
+            const day = WEEKDAY_LABELS[weekdayIndex(s.start, timezone)];
+            const time = formatInTz(s.start, timezone, {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            return (
+              <li
+                key={i}
+                className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm"
+              >
+                <span className="font-display text-[var(--gold)]">
+                  {day} {time}
+                </span>
+                <span className="text-xs text-[var(--ink-soft)]">
+                  falta {s.missing.join(", ")}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-2.5 text-xs text-[var(--ink-faint)]">
+          Si esas personas pintan ese horario, la reunión queda coordinada.
+        </p>
       </div>
     );
   }
