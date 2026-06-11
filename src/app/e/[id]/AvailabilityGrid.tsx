@@ -11,6 +11,41 @@ import {
 
 type ParticipantLite = { id: string; name: string };
 
+function PersonIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      aria-hidden="true"
+      className="h-2 w-2 sm:h-2.5 sm:w-2.5"
+    >
+      <circle cx="8" cy="4.5" r="3" />
+      <path d="M2 15c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5z" />
+    </svg>
+  );
+}
+
+// Muestra cuántas personas marcaron la celda (solo cuando hay 2+).
+// 2 o 3 → ese número de personitas. 4+ → una personita y el número.
+function CellMarkers({ count }: { count: number }) {
+  if (count < 2) return null;
+  return (
+    <span
+      className="pointer-events-none relative z-[2] flex items-center justify-center gap-[1.5px] text-[8px] font-bold leading-none [filter:drop-shadow(0_0_1.5px_rgba(245,213,154,0.7))] sm:text-[9px]"
+      style={{ color: "#2a1608" }}
+    >
+      {count <= 3 ? (
+        Array.from({ length: count }, (_, i) => <PersonIcon key={i} />)
+      ) : (
+        <>
+          <PersonIcon />
+          {count}
+        </>
+      )}
+    </span>
+  );
+}
+
 type Props = {
   slots: Date[];
   timezone: string;
@@ -310,7 +345,7 @@ function Row({
             role="button"
             tabIndex={0}
             title={`${count} ${count === 1 ? "marcó" : "marcaron"}`}
-            className={`h-8 cursor-pointer border border-[var(--line-soft)] transition-colors hover:border-[var(--gold)] sm:h-7 ${coincide}`}
+            className={`flex h-8 cursor-pointer items-center justify-center border border-[var(--line-soft)] transition-colors hover:border-[var(--gold)] sm:h-7 ${coincide}`}
             style={{ ...cellStyle(iso), touchAction: "none" }}
             onPointerDown={(e) => {
               e.preventDefault();
@@ -335,7 +370,9 @@ function Row({
               }
             }}
             data-iso={iso}
-          />
+          >
+            <CellMarkers count={count} />
+          </div>
         );
       })}
     </>

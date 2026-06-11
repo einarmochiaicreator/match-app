@@ -17,6 +17,7 @@ import {
 } from "@/lib/time";
 import AvailabilityGrid from "./AvailabilityGrid";
 import BestSlots from "./BestSlots";
+import StatusBanner, { type BannerStatus } from "./StatusBanner";
 
 type MeState = { id: string; name: string; timezone: string } | null;
 
@@ -160,6 +161,37 @@ export default function EventClient({ id }: { id: string }) {
     publishedParticipants,
     availabilityByParticipant,
     allPublished,
+  ]);
+
+  const pendingNames = useMemo(
+    () => participants.filter((p) => p.published_at == null).map((p) => p.name),
+    [participants]
+  );
+
+  const status = useMemo<BannerStatus>(() => {
+    const total = participants.length;
+    if (!allPublished) {
+      return {
+        kind: "waiting",
+        pending: pendingNames,
+        published: publishedParticipants.length,
+        total,
+      };
+    }
+    const best = bestBlocks[0];
+    if (total < 2 || !best || best.attendees.length < 2) {
+      return { kind: "none", total };
+    }
+    if (best.attendees.length === total) {
+      return { kind: "matched", block: best, total };
+    }
+    return { kind: "partial", block: best, total };
+  }, [
+    allPublished,
+    pendingNames,
+    publishedParticipants.length,
+    participants.length,
+    bestBlocks,
   ]);
 
   const toggleSlots = useCallback(
@@ -341,6 +373,8 @@ export default function EventClient({ id }: { id: string }) {
       {!me ? (
         <JoinForm onJoin={joinAs} error={error} />
       ) : (
+        <div className="space-y-6 sm:space-y-8">
+        <StatusBanner status={status} timezone={me.timezone} />
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_300px] lg:gap-10">
           <section>
             <div className="mb-4 flex items-end justify-between gap-3 sm:mb-5">
@@ -430,6 +464,7 @@ export default function EventClient({ id }: { id: string }) {
               </div>
             )}
           </aside>
+        </div>
         </div>
       )}
     </div>

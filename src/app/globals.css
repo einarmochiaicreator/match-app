@@ -134,6 +134,21 @@ body {
   pointer-events: none;
 }
 
+/* Cartel "Reunión coordinada": glow dorado pulsante */
+@keyframes banner-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--gold), 0 0 24px -10px rgba(245, 213, 154, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 1px var(--gold-bright),
+      0 0 48px -6px rgba(245, 213, 154, 0.9);
+  }
+}
+
+.banner-coordinada {
+  animation: banner-pulse 2.6s ease-in-out infinite;
+}
 
 @layer components {
   .input {
