@@ -267,7 +267,7 @@ export default function AvailabilityGrid({
 
         {grid.hours.length > 0 && (
           <>
-            <div className="flex h-0 items-start justify-end overflow-visible pr-1 text-[9px] leading-none tabular-nums text-[var(--ink-faint)] sm:pr-3 sm:text-[10px]">
+            <div className="flex h-0 items-start justify-end overflow-visible pr-1 text-[10px] font-medium leading-none tabular-nums text-[var(--ink-soft)] sm:pr-3 sm:text-[11px]">
               <span className="-translate-y-1/2">
                 {String(
                   (grid.hours[grid.hours.length - 1] + 1) % 24 === 0
@@ -352,7 +352,7 @@ function Row({
   const hh = String(hour).padStart(2, "0");
   return (
     <>
-      <div className="flex items-start justify-end pr-1 text-[9px] leading-none tabular-nums text-[var(--ink-faint)] sm:pr-3 sm:text-[10px]">
+      <div className="flex items-start justify-end pr-1 text-[10px] font-medium leading-none tabular-nums text-[var(--ink-soft)] sm:pr-3 sm:text-[11px]">
         <span className="-translate-y-1/2">{hh}</span>
       </div>
       {Array.from({ length: 7 }, (_, wd) => {
